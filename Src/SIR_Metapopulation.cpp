@@ -656,7 +656,6 @@ int main(int argc, char* argv[]) {
     const unsigned int uid = stoul(argv[6]);
     const double alpha = 0;
     // Size b=2, l=3; 
-    // Size b=3, l=3; 
     Size b=4, l=5; 
     
     Size subpopulation = number_of_nodes/pow(b, l);
