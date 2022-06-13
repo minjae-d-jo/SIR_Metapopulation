@@ -20,7 +20,7 @@ exec 2>> $logFile
 echo "$(date +%Y-%m-%d_%H:%M:%S): start $$ $(hostname)" >> $logFile
 
 
-Bin/SIR_ER $N $L $kappa $p $nRepeat > $outputFile #2> $outputFile2
+Bin/SIR_Metapopulation $N $L $kappa $p $nRepeat > $outputFile #2> $outputFile2
 ret=$?;
 echo -n "$(date +%Y-%m-%d_%H:%M:%S): " >> $logFile
 if [ $ret -eq 0 ]; then

@@ -439,13 +439,51 @@ void SIR(const Size number_of_nodes, const Size b, const Size l,
         }
     }
 
+    // pow(b, l) seed initial condition : I
+    // for(Size n=0; n<pow(b, l); ++n) {
+    //     state[n][0] = 2;
+    //     deltaP[n][0] = 1;
+    //     ++I[n];
+    //     for(auto nn : graph[n][0]) {
+    //         if( state[n][nn]==0 ) {
+    //             deltaP[n][nn] += kappa;
+    //             ++SI[n];
+    //         }
+    //     }
+    // }
+
+
+    // Single seed initial condition : E
+    // state[0][0] = 1;
+	// deltaP[0][0] = alpha;
+	// ++E[0];
+	// for(auto nn : graph[0][0]) {
+	// 	if( state[0][nn]==0 ) {
+	// 		deltaP[0][nn] += omega;
+	// 		++SE[0];
+	// 	}
+	// }
+
+    // pow(b, l) seed initial condition : E
+    // for(Size n=0; n<pow(b, l); ++n) {
+    //     state[n][0] = 1;
+    //     deltaP[n][0] = alpha;
+    //     ++E[n];
+    //     for(auto nn : graph[n][0]) {
+    //         if( state[n][nn]==0 ) {
+    //             deltaP[n][nn] += omega;
+    //             ++SE[n];
+    //         }
+    //     }
+    // }
+
+
     ostringstream oss;
     oss << "SIR_" << number_of_nodes << "_" << kappa << "_"
     << p << "_" << uid << ".table";
     ofstream os(oss.str());
     double previous_total_I;
-	while( true ) {
-        
+    while( true ) {
         for(Size n=0; n<pow(b, l); ++n) {
             total_SI += SI[n]; total_SE += SE[n]; total_E += E[n]; total_I += I[n]; total_R += R[n];
         }
@@ -460,6 +498,7 @@ void SIR(const Size number_of_nodes, const Size b, const Size l,
         Size trial = ((total_I));
         double probability = p/trial;
         if(rnd() < 1.0/total_I) {
+            // for(Size k=0; k<0.35*(number_of_nodes); ++k) {
             for(Size k=0; k<pow(b,l); ++k) {
                 r_subgraph = rnd();
                 picked_distance = distance(deltaP_subgraph.begin(), lower_bound(deltaP_subgraph.begin(), deltaP_subgraph.end(), deltaP_subgraph.back()*r_subgraph));
@@ -616,7 +655,7 @@ int main(int argc, char* argv[]) {
 	const unsigned int number_of_ensembles = stoul(argv[5]);
     const unsigned int uid = stoul(argv[6]);
     const double alpha = 0;
-    // Size b=2, l=3;
+    // Size b=2, l=3; 
     // Size b=3, l=3; 
     Size b=4, l=5; 
     
@@ -625,6 +664,7 @@ int main(int argc, char* argv[]) {
     vector<vector<vector<Size>>> graph(pow(b, l), vector<vector<Size>>(subpopulation));
     vector<vector<Size>> graph_of_graph((pow(b, l+1)-1)/(b-1));
 
+    // vector<vector<Size>> graph(number_of_nodes);
     vector<double> P(subpopulation, 0);
     vector<Size> Y(subpopulation, 0);
     const double gamma = 2.5;
@@ -639,6 +679,6 @@ int main(int argc, char* argv[]) {
     for(Size ensemble=0; ensemble<number_of_ensembles; ++ensemble) { // loop over ensemble
         SIR(number_of_nodes, b, l, graph, graph_of_graph, kappa, alpha, subpopulation, p, uid);
 	}
-
+        
 	return 0;
 }
