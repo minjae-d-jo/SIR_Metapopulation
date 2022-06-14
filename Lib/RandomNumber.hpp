@@ -4,7 +4,7 @@
 #include <random>
 #include <cstdint>
 #include <limits>
-
+#include "pcg_random.hpp"
 
 namespace Snu {
 namespace Cnrc {
@@ -87,10 +87,12 @@ namespace Cnrc {
 			XORShift32 x2;
 	};
 
-	//typedef std::mt19937& RandomNumberEngine32;
-	//typedef std::mt19937_64& RandomNumberEngine64;
-	typedef XORShift32& RandomNumberEngine32;
-	typedef XORShift64& RandomNumberEngine64;
+	// typedef std::mt19937& RandomNumberEngine32;
+	// typedef std::mt19937_64& RandomNumberEngine64;
+	// typedef XORShift32& RandomNumberEngine32;
+	// typedef XORShift64& RandomNumberEngine64;
+	typedef pcg32& RandomNumberEngine32;
+	typedef pcg64& RandomNumberEngine64;
 	
 	inline RandomNumberEngine32 getRandomNumberEngine32Instance() {
 		struct Seed {
