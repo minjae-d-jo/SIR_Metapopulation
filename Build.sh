@@ -36,4 +36,4 @@ function debugBuild {
 }
 
 
-build SIR_SF_time_dynamics
+build SIR_Metapopulation
