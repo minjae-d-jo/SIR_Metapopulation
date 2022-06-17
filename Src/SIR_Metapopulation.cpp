@@ -13,13 +13,69 @@ using namespace Snu::Cnrc;
 using Size = unsigned int;
 
 
-Size find_subgraph_given_distance(vector<vector<Size>>& graph_of_graph, Size picked_subgraph_1, 
+class SIR_Metapopulation {
+private:
+    unsigned int number_of_nodes;
+    unsigned int number_of_edges;
+    double       kappa;
+    double       p;
+    unsigned int number_of_ensembles;
+    unsigned int uid;
+    double       alpha;
+    Size         b;
+    Size         l;
+    
+public:
+    SIR_Metapopulation(const unsigned, const unsigned, const double, const double, const unsigned, const unsigned, const double, const Size, const Size);
+    ~SIR_Metapopulation();
+    void Run();
+    Size find_subgraph_given_distance(vector<vector<Size>>& graph_of_graph, Size picked_subgraph_1, Size distance, const Size b, const Size l);
+    void switch_node(Size picked_site_1, Size distance, Size picked_node_in_subgraph_2, vector<vector<vector<Size>>>& graph, vector<vector<Size>>& state, vector<vector<Size>>& graph_of_graph, const Size b, const Size l, vector<vector<double>>& deltaP, vector<Size>& SI, vector<Size>& SE, vector<Size>& E, vector<Size>& I, vector<Size>& R, const double kappa, const double omega, const double alpha);
+    void SIR(const Size number_of_nodes, const Size b, const Size l, vector<vector<vector<Size>>>& graph, vector<vector<Size>>& graph_of_graph, const double kappa, const double alpha, const Size subpopulation, const double p, const Size uid);
+    bool isLinked(Size x, Size y, vector<vector<Size>>& graph); 
+    void robinhood(vector<double>& P, vector<Size>& Y, Size N, double gamma); 
+    void makeERGraph(const Size number_of_nodes, const Size number_of_edges, vector<vector<Size>>& graph);
+    void makeSFGraph(vector<double>& P, vector<Size>& Y, Size number_of_nodes, Size number_of_edges, vector<vector<Size>>& graph);
+    void makeTreeGraph(vector<vector<Size>>& graph_of_graph, const Size b, const Size l) ;
+};
+
+
+SIR_Metapopulation::SIR_Metapopulation(const unsigned int _number_of_nodes_, const unsigned int _number_of_edges_, const double _kappa_, const double _p_, const unsigned int _number_of_ensembles_, const unsigned int _uid_, const double _alpha_, const Size _b_, const Size _l_) 
+    : number_of_nodes(_number_of_nodes_), number_of_edges(_number_of_edges_), kappa(_kappa_), p(_p_), number_of_ensembles(_number_of_ensembles_), uid(_uid_), alpha(_alpha_), b(_b_), l(_l_) {
+}
+
+SIR_Metapopulation::~SIR_Metapopulation() {
+}
+
+void SIR_Metapopulation::Run() {
+    Size subpopulation = number_of_nodes/pow(b, l);
+    Size subedges = number_of_edges/pow(b, l);
+    vector<vector<vector<Size>>> graph(pow(b, l), vector<vector<Size>>(subpopulation));
+    vector<vector<Size>> graph_of_graph((pow(b, l+1)-1)/(b-1));
+
+    vector<double> P(subpopulation, 0);
+    vector<Size> Y(subpopulation, 0);
+    const double gamma = 2.5;
+    robinhood(P, Y, subpopulation, gamma);
+    for(Size n=0; n<pow(b, l); ++n) {
+        makeSFGraph(P, Y, subpopulation, subedges, graph[n]);
+        // makeERGraph(subpopulation, subedges, graph[n]);
+    }
+    
+
+    makeTreeGraph(graph_of_graph, b, l);
+    for(Size ensemble=0; ensemble<number_of_ensembles; ++ensemble) { // loop over ensemble
+        SIR(number_of_nodes, b, l, graph, graph_of_graph, kappa, alpha, subpopulation, p, uid);
+    }
+}
+
+Size SIR_Metapopulation::find_subgraph_given_distance(vector<vector<Size>>& graph_of_graph, Size picked_subgraph_1, 
     Size distance, const Size b, const Size l) {
     
     vector<Size> visited(graph_of_graph.size(), 0); // default values of vector are 0 
     queue<Size> bfs_queue;
     vector<Size> distance_from_seed(graph_of_graph.size(), 0);
-    Size order_in_distance, picked_subgraph_2;
+    Size order_in_distance, picked_subgraph_2 = 0;
     bfs_queue.push(picked_subgraph_1);
     visited[picked_subgraph_1] = true;
     distance_from_seed[picked_subgraph_1] = 0;
@@ -58,7 +114,7 @@ Size find_subgraph_given_distance(vector<vector<Size>>& graph_of_graph, Size pic
     return picked_subgraph_2;
 }
 
-void switch_node(Size picked_site_1, Size distance, Size picked_node_in_subgraph_2,
+void SIR_Metapopulation::switch_node(Size picked_site_1, Size distance, Size picked_node_in_subgraph_2,
     vector<vector<vector<Size>>>& graph, vector<vector<Size>>& state, vector<vector<Size>>& graph_of_graph, 
     const Size b, const Size l, vector<vector<double>>& deltaP,
     vector<Size>& SI, vector<Size>& SE, vector<Size>& E, vector<Size>& I, vector<Size>& R,
@@ -408,7 +464,7 @@ void switch_node(Size picked_site_1, Size distance, Size picked_node_in_subgraph
     }
 }
 
-void SIR(const Size number_of_nodes, const Size b, const Size l,
+void SIR_Metapopulation::SIR(const Size number_of_nodes, const Size b, const Size l,
     vector<vector<vector<Size>>>& graph, vector<vector<Size>>& graph_of_graph, 
     const double kappa, const double alpha, const Size subpopulation, const double p, const Size uid) {
     
@@ -495,10 +551,7 @@ void SIR(const Size number_of_nodes, const Size b, const Size l,
         r_1 = rnd();
 		dt = -log(r_1)/(double)(total_SI*kappa+total_I*1.0);
         t += dt;
-        Size trial = ((total_I));
-        double probability = p/trial;
         if(rnd() < 1.0/total_I) {
-            // for(Size k=0; k<0.35*(number_of_nodes); ++k) {
             for(Size k=0; k<pow(b,l); ++k) {
                 r_subgraph = rnd();
                 picked_distance = distance(deltaP_subgraph.begin(), lower_bound(deltaP_subgraph.begin(), deltaP_subgraph.end(), deltaP_subgraph.back()*r_subgraph));
@@ -548,12 +601,12 @@ void SIR(const Size number_of_nodes, const Size b, const Size l,
 	}
 }
 
-bool isLinked(Size x, Size y, vector<vector<Size>>& graph){ 
+bool SIR_Metapopulation::isLinked(Size x, Size y, vector<vector<Size>>& graph){ 
 	return ((find(graph[x].begin(),graph[x].end(),y)) != graph[x].end());
 }
 
 
-void robinhood(vector<double>& P, vector<Size>& Y, Size N, double gamma) { // builds robin hood table. used for dynamical scale-free network
+void SIR_Metapopulation::robinhood(vector<double>& P, vector<Size>& Y, Size N, double gamma) { // builds robin hood table. used for dynamical scale-free network
     int n_poor, n_rich, n1, n2;
     double psum;
     double mu = 1.0/(gamma-1);
@@ -603,7 +656,7 @@ void robinhood(vector<double>& P, vector<Size>& Y, Size N, double gamma) { // bu
     }
 }
 
-void makeERGraph(const Size number_of_nodes, const Size number_of_edges, vector<vector<Size>>& graph) {
+void SIR_Metapopulation::makeERGraph(const Size number_of_nodes, const Size number_of_edges, vector<vector<Size>>& graph) {
 	RandomUnsignedIntGenerator rnd(0, number_of_nodes - 1);
 	for(Size i = 0; i < number_of_edges; ++i) {
 		Size n1 = rnd();
@@ -617,7 +670,7 @@ void makeERGraph(const Size number_of_nodes, const Size number_of_edges, vector<
 	}
 }
 
-void makeSFGraph(vector<double>& P, vector<Size>& Y, Size number_of_nodes, Size number_of_edges, vector<vector<Size>>& graph) {
+void SIR_Metapopulation::makeSFGraph(vector<double>& P, vector<Size>& Y, Size number_of_nodes, Size number_of_edges, vector<vector<Size>>& graph) {
     RandomIntGenerator rndInt(0, number_of_nodes-1);
     RandomRealGenerator rnd(0.0, 1.0);
     int n1, n2, K;
@@ -635,7 +688,7 @@ void makeSFGraph(vector<double>& P, vector<Size>& Y, Size number_of_nodes, Size 
     }
 }
 
-void makeTreeGraph(vector<vector<Size>>& graph_of_graph, const Size b, const Size l) {
+void SIR_Metapopulation::makeTreeGraph(vector<vector<Size>>& graph_of_graph, const Size b, const Size l) {
     for(Size i=0; i<l; ++i) {
         for(Size j=(pow(b, i)-1)/(b-1); j<(pow(b, i+1)-1)/(b-1); ++j) {
             for(Size k=1; k<=b; ++k) {
@@ -650,34 +703,19 @@ void makeTreeGraph(vector<vector<Size>>& graph_of_graph, const Size b, const Siz
 int main(int argc, char* argv[]) {
 	const unsigned int number_of_nodes = stoul(argv[1]);
 	const unsigned int number_of_edges = stoul(argv[2]);
-    const double kappa = stof(argv[3]);
-    const double p = stof(argv[4]);
+    const double       kappa = stof(argv[3]);
+    const double       p = stof(argv[4]);
 	const unsigned int number_of_ensembles = stoul(argv[5]);
     const unsigned int uid = stoul(argv[6]);
-    const double alpha = 0;
-    Size b=2, l=3; 
-    // Size b=4, l=5; 
-    
-    Size subpopulation = number_of_nodes/pow(b, l);
-    Size subedges = number_of_edges/pow(b, l);
-    vector<vector<vector<Size>>> graph(pow(b, l), vector<vector<Size>>(subpopulation));
-    vector<vector<Size>> graph_of_graph((pow(b, l+1)-1)/(b-1));
-
-    // vector<vector<Size>> graph(number_of_nodes);
-    vector<double> P(subpopulation, 0);
-    vector<Size> Y(subpopulation, 0);
-    const double gamma = 2.5;
-    robinhood(P, Y, subpopulation, gamma);
-    for(Size n=0; n<pow(b, l); ++n) {
-        makeSFGraph(P, Y, subpopulation, subedges, graph[n]);
-        // makeERGraph(subpopulation, subedges, graph[n]);
-    }
-    
-
-    makeTreeGraph(graph_of_graph, b, l);
-    for(Size ensemble=0; ensemble<number_of_ensembles; ++ensemble) { // loop over ensemble
-        SIR(number_of_nodes, b, l, graph, graph_of_graph, kappa, alpha, subpopulation, p, uid);
-	}
+    const double       alpha = 0;
+    const Size         b = 2;
+    const Size         l = 3;
         
-	return 0;
+    std::ios_base::sync_with_stdio(false);
+    cin.tie(nullptr); cout.tie(nullptr);
+
+    SIR_Metapopulation* Model = new SIR_Metapopulation(number_of_nodes, number_of_edges, kappa, p, number_of_ensembles, uid, alpha, b, l);
+    
+    Model -> Run();
+    delete Model;
 }
